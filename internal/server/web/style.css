@@ -1,0 +1,42 @@
+/* Bootstrap で足りない分だけを補う。 */
+
+/* OS のダークモード設定に追随させる (Bootstrap 5.3 の data-bs-theme を app.js で切り替える)。 */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+}
+
+pre.rpsl {
+  font-size: 12.5px;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0;
+  max-height: 44vh;
+}
+
+td.key { font-family: var(--bs-font-monospace); font-weight: 600; white-space: nowrap; }
+td.origin { font-family: var(--bs-font-monospace); }
+td.descr {
+  color: var(--bs-secondary-color);
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+td.changed { white-space: nowrap; }
+td.actions { white-space: nowrap; text-align: right; }
+
+tr.row-delete td.key { text-decoration: line-through; }
+
+/* 属性エディタ: 属性名 / 値 / 削除ボタン */
+.attr-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 40px;
+  gap: .5rem;
+  align-items: start;
+  margin-bottom: .5rem;
+}
+.attr-row input, .attr-row textarea { font-family: var(--bs-font-monospace); font-size: 13px; }
+.attr-row textarea { min-height: 62px; }
+/* 説明は値の欄の下、属性名の右から始める */
+.attr-row .attr-help { grid-column: 2 / 4; margin-top: -.15rem; margin-bottom: .35rem; line-height: 1.4; }
+.attr-row .attr-help .badge { font-size: 10px; vertical-align: 1px; }

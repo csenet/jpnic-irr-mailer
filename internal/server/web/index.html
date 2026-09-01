@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JPIRR Mailer</title>
+<link rel="stylesheet" href="vendor/bootstrap.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="pb-5">
+
+<nav class="navbar bg-body-tertiary border-bottom sticky-top">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand mb-0 h1 fs-5">JPIRR Mailer</span>
+    <span class="badge text-bg-secondary font-monospace me-auto" id="mntnerBadge">未設定</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge rounded-pill text-bg-secondary" id="authBadge">確認中…</span>
+      <button class="btn btn-sm btn-outline-primary" id="authBtn" hidden>Google でログイン</button>
+      <button class="btn btn-sm btn-outline-secondary" id="logoutBtn" hidden>ログアウト</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container-fluid px-4 py-4" style="max-width: 1400px">
+  <div class="alert alert-danger d-none" id="globalError" role="alert"></div>
+  <div class="alert alert-success d-none" id="globalOk" role="status"></div>
+
+  <div class="accordion mb-4" id="settingsAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#settingsBody">設定</button>
+      </h2>
+      <div id="settingsBody" class="accordion-collapse collapse" data-bs-parent="#settingsAccordion">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="cfgMntner">Maintainer (mnt-by)</label>
+              <input type="text" class="form-control font-monospace" id="cfgMntner" placeholder="MAINT-AS64496">
+              <div class="form-text">この maintainer 配下のオブジェクトを whois から取得します</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgFrom">メールの From</label>
+              <input type="email" class="form-control font-monospace" id="cfgFrom" placeholder="you@gmail.com">
+              <div class="form-text">Gmail の認証アカウント (エイリアス未登録なら自動でそれになります)</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgChanged">changed: に書くアドレス</label>
+              <input type="email" class="form-control font-monospace" id="cfgChanged" placeholder="noc@example.jp">
+              <div class="form-text">オブジェクトの changed: / delete: に記録される連絡先。空なら From と同じ</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgTo">宛先</label>
+              <input type="email" class="form-control font-monospace" id="cfgTo" placeholder="auto-dbm@nic.ad.jp">
+              <div class="form-text">JPIRR の自動処理システム</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgWhois">whois サーバ</label>
+              <input type="text" class="form-control font-monospace" id="cfgWhois" placeholder="jpirr.nic.ad.jp:43">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgNotify">notify の既定値</label>
+              <input type="email" class="form-control font-monospace" id="cfgNotify" placeholder="noc@example.jp">
+              <div class="form-text">新規オブジェクト作成時の初期値になります</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgOrigin">origin の既定値</label>
+              <input type="text" class="form-control font-monospace" id="cfgOrigin" placeholder="AS64496">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="cfgPassword">JPIRR パスワード (任意)</label>
+              <input type="password" class="form-control" id="cfgPassword" autocomplete="off"
+                     placeholder="空なら送信のたびに入力">
+              <div class="form-text">保存すると送信ダイアログに自動で入ります。config.json (0600) に平文で保存されます</div>
+            </div>
+          </div>
+          <hr class="my-4">
+          <h6 class="mb-3">送信方式</h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="cfgTransport">メールの送り方</label>
+              <select class="form-select" id="cfgTransport">
+                <option value="smtp">SMTP + アプリパスワード (簡単)</option>
+                <option value="gmail">Gmail API + OAuth (GCP の設定が必要)</option>
+              </select>
+              <div class="form-text" id="transportHint"></div>
+            </div>
+            <div class="col-md-8 smtp-only">
+              <div class="row g-3">
+                <div class="col-sm-5">
+                  <label class="form-label" for="cfgSmtpHost">SMTP サーバ</label>
+                  <input type="text" class="form-control font-monospace" id="cfgSmtpHost" placeholder="smtp.gmail.com">
+                </div>
+                <div class="col-sm-2">
+                  <label class="form-label" for="cfgSmtpPort">ポート</label>
+                  <input type="number" class="form-control font-monospace" id="cfgSmtpPort" placeholder="587">
+                </div>
+                <div class="col-sm-5">
+                  <label class="form-label" for="cfgSmtpUser">ユーザー名</label>
+                  <input type="email" class="form-control font-monospace" id="cfgSmtpUser" placeholder="you@gmail.com">
+                </div>
+                <div class="col-sm-7">
+                  <label class="form-label" for="cfgSmtpPass">アプリパスワード</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" id="cfgSmtpPass" autocomplete="off" placeholder="xxxx xxxx xxxx xxxx">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSmtpPass" title="保存済みのパスワードを消す">クリア</button>
+                  </div>
+                  <div class="form-text">
+                    Google アカウント → セキュリティ → 2 段階認証プロセス → <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">アプリ パスワード</a>で発行した 16 桁。
+                    <span id="smtpPassState"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-3 mt-3">
+            <button class="btn btn-secondary" id="saveCfgBtn">設定を保存</button>
+            <span class="form-text m-0" id="cfgPath"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+      <strong class="me-auto">登録オブジェクト</strong>
+      <button class="btn btn-sm btn-primary" id="fetchBtn">JPIRR から取得</button>
+      <button class="btn btn-sm btn-outline-secondary" id="addRouteBtn">+ route</button>
+      <button class="btn btn-sm btn-outline-secondary" id="addRoute6Btn">+ route6</button>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">+ その他</button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#" data-new="person">person <span class="text-body-secondary small">— 担当者 (JPNIC ハンドル)</span></a></li>
+          <li><a class="dropdown-item" href="#" data-new="role">role <span class="text-body-secondary small">— 担当グループ</span></a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" data-new="aut-num">aut-num <span class="text-body-secondary small">— AS 番号とポリシー</span></a></li>
+          <li><a class="dropdown-item" href="#" data-new="as-set">as-set <span class="text-body-secondary small">— AS の集合</span></a></li>
+        </ul>
+      </div>
+      <button class="btn btn-sm btn-outline-warning" id="touchAllBtn"
+              title="内容は変えずに changed: の日付だけ更新して送り直します">表示中をまとめて再登録</button>
+    </div>
+
+    <div class="card-body border-bottom py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <select class="form-select form-select-sm" id="classFilter" style="width:auto">
+            <option value="routes">route / route6</option>
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <input type="search" class="form-control form-control-sm" id="filterInput"
+                 placeholder="プレフィックスや descr で絞り込み">
+        </div>
+        <div class="col-auto">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="staleOnly">
+            <label class="form-check-label small" for="staleOnly"
+                   title="JPIRR は最終更新から 14 ヶ月で自動削除します">更新期限が近いものだけ</label>
+          </div>
+        </div>
+        <div class="col-auto ms-auto small text-body-secondary" id="rowCount"></div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width:80px">種別</th>
+            <th style="width:210px">キー</th>
+            <th style="width:110px">origin</th>
+            <th>descr</th>
+            <th style="width:150px">最終更新</th>
+            <th style="width:96px">状態</th>
+            <th style="width:210px"></th>
+          </tr>
+        </thead>
+        <tbody id="objectRows"></tbody>
+      </table>
+    </div>
+    <div class="card-body text-center text-body-secondary py-5" id="emptyState">
+      「JPIRR から取得」を押すと、現在の登録内容を読み込みます。
+    </div>
+  </div>
+</main>
+
+<div class="fixed-bottom bg-body-tertiary border-top">
+  <div class="container-fluid px-4 py-2 d-flex align-items-center gap-2" style="max-width: 1400px">
+    <strong id="changeCount">変更なし</strong>
+    <span class="badge text-bg-success" id="cntCreate" hidden></span>
+    <span class="badge text-bg-warning" id="cntUpdate" hidden></span>
+    <span class="badge text-bg-danger" id="cntDelete" hidden></span>
+    <span class="badge text-bg-info" id="cntTouch" hidden></span>
+    <span class="ms-auto"></span>
+    <button class="btn btn-sm btn-outline-secondary" id="resetBtn" disabled>変更を破棄</button>
+    <button class="btn btn-sm btn-primary" id="reviewBtn" disabled>差分を確認して送信</button>
+  </div>
+</div>
+
+<!-- オブジェクト編集 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTitle">オブジェクトを編集</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger d-none" id="editError"></div>
+        <div id="attrRows"></div>
+        <div class="d-flex gap-2 mt-3">
+          <select class="form-select form-select-sm" id="attrPicker" style="width:auto">
+            <option value="">属性を追加…</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="addAttrBtn">追加</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="editSave">この内容にする</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 送信確認 -->
+<div class="modal fade" id="sendModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">送信内容の確認</h5>
+        <span class="ms-3 small text-body-secondary" id="sendTarget"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger d-none" id="sendError"></div>
+        <div class="alert alert-warning d-none" id="sendWarn"></div>
+        <p class="text-body-secondary small">
+          以下の本文が plain text メールとして送信されます。<code>password</code> 行は送信時に実際の値へ差し替わります。</p>
+        <pre class="rpsl border rounded p-3 bg-body-tertiary" id="sendPreview"></pre>
+        <label class="form-label mt-3" for="sendPassword">JPIRR の maintainer パスワード</label>
+        <input type="password" class="form-control" id="sendPassword" autocomplete="off"
+               placeholder="auth: CRYPT-PW に対応する平文パスワード">
+        <div class="form-text" id="sendPasswordHint">入力値はメール本文にのみ使われ、保存されません</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-outline-secondary" id="refreshPreview">プレビュー更新</button>
+        <button type="button" class="btn btn-primary" id="sendSubmit">この内容で送信</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
